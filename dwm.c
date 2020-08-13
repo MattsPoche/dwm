@@ -210,6 +210,7 @@ static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
 static void setgaps(const Arg *arg);
+static void iterlayout(const Arg *arg);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
 static void setup(void);
@@ -1579,6 +1580,20 @@ setgaps(const Arg *arg)
 }
 
 void
+iterlayout(const Arg *arg)
+{
+	static int il = 0; /* current layout index */
+
+	if (arg && arg->i)
+		il += arg->i;
+	if (il >= layout_count)
+		il = 0;
+	Arg larg;
+	larg.v = &layouts[il];
+	setlayout(&larg);
+}
+
+void
 setlayout(const Arg *arg)
 {
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
@@ -1591,6 +1606,22 @@ setlayout(const Arg *arg)
 	else
 		drawbar(selmon);
 }
+
+/* Old setlayout function //
+void
+setlayout(const Arg *arg)
+{
+	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
+		selmon->sellt ^= 1;
+	if (arg && arg->v)
+		selmon->lt[selmon->sellt] = (Layout *)arg->v;
+	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
+	if (selmon->sel)
+		arrange(selmon);
+	else
+		drawbar(selmon);
+}
+*/
 
 /* arg > 1.0 will set mfact absolutely */
 void
