@@ -205,6 +205,7 @@ static void restack(Monitor *m);
 static void run(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
+static void cyclemon(void);
 static void sendmon(Client *c, Monitor *m);
 static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
@@ -768,7 +769,7 @@ drawbar(Monitor *m)
 	Client *c;
 
 	/* draw status first so it can be overdrawn by tags later */
-	if (m == selmon) { /* status is only drawn on selected monitor */
+	if (m == selmon || statsell) { /* status is only drawn on selected monitor */
 		drw_setscheme(drw, scheme[SchemeNorm]);
 		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
 		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
@@ -843,7 +844,7 @@ expose(XEvent *e)
 	XExposeEvent *ev = &e->xexpose;
 
 	if (ev->count == 0 && (m = wintomon(ev->window)))
-		drawbar(m);
+		drawbars();
 }
 
 void
@@ -1310,7 +1311,7 @@ propertynotify(XEvent *e)
 		if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
 			updatetitle(c);
 			if (c == c->mon->sel)
-				drawbar(c->mon);
+				drawbars();
 		}
 		if (ev->atom == netatom[NetWMWindowType])
 			updatewindowtype(c);
@@ -1423,7 +1424,7 @@ restack(Monitor *m)
 	XEvent ev;
 	XWindowChanges wc;
 
-	drawbar(m);
+	drawbars();
 	if (!m->sel)
 		return;
 	if (m->sel->isfloating || !m->lt[m->sellt]->arrange)
@@ -1476,6 +1477,21 @@ scan(void)
 		}
 		if (wins)
 			XFree(wins);
+	}
+}
+
+void
+cyclemon(void) /* TODO: Swap the displays of two monitors */
+{
+	if (!mons->next)
+		return;
+	Monitor *tmp = selmon;
+	if (!selmon->next) {
+		selmon = mons;
+		mons = tmp;
+	} else {
+		selmon = selmon->next;
+		selmon = tmp;
 	}
 }
 
@@ -1604,7 +1620,7 @@ setlayout(const Arg *arg)
 	if (selmon->sel)
 		arrange(selmon);
 	else
-		drawbar(selmon);
+		drawbars();
 }
 
 /* Old setlayout function //
@@ -2120,7 +2136,7 @@ updatestatus(void)
 {
 	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
 		strcpy(stext, "dwm-"VERSION);
-	drawbar(selmon);
+	drawbars();
 }
 
 void
